@@ -71,6 +71,7 @@ enum ChartRangeMethod {
 
 /// Controls the drawing.
 pub struct Chart<'a> {
+    x: u32,
     /// Canvas width in points.
     width: u32,
     /// Canvas height in points.
@@ -119,7 +120,7 @@ pub trait ColorPlot<'a> {
 
 impl<'a> Default for Chart<'a> {
     fn default() -> Self {
-        Self::new(120, 60, -10.0, 10.0)
+        Self::new(0, 120, 60, -10.0, 10.0)
     }
 }
 
@@ -129,7 +130,7 @@ impl<'a> Chart<'a> {
     /// # Panics
     ///
     /// Panics if `width` or `height` is less than 32.
-    pub fn new(width: u32, height: u32, xmin: f32, xmax: f32) -> Self {
+    pub fn new(x: u32, width: u32, height: u32, xmin: f32, xmax: f32) -> Self {
         if width < 32 {
             panic!("width should be more then 32, {} is provided", width);
         }
@@ -139,6 +140,7 @@ impl<'a> Chart<'a> {
         }
 
         Self {
+            x,
             xmin,
             xmax,
             ymin: f32::INFINITY,
@@ -157,6 +159,7 @@ impl<'a> Chart<'a> {
     ///
     /// Panics if `width` or `height` is less than 32.
     pub fn new_with_y_range(
+        x: u32,
         width: u32,
         height: u32,
         xmin: f32,
@@ -173,6 +176,7 @@ impl<'a> Chart<'a> {
         }
 
         Self {
+            x,
             xmin,
             xmax,
             ymin,
@@ -201,7 +205,7 @@ impl<'a> Chart<'a> {
         if i <= self.width {
             for j in 0..=self.height {
                 if j % 3 == 0 {
-                    self.canvas.set(i, j);
+                    self.canvas.set(self.x + i, j);
                 }
             }
         }
@@ -212,7 +216,7 @@ impl<'a> Chart<'a> {
         if j <= self.height {
             for i in 0..=self.width {
                 if i % 3 == 0 {
-                    self.canvas.set(i, self.height - j);
+                    self.canvas.set(self.x + i, self.height - j);
                 }
             }
         }
@@ -226,11 +230,11 @@ impl<'a> Chart<'a> {
         if let Some(idx) = frame.find('\n') {
             frame.insert_str(idx, &format!(" {0:.1}", self.ymax));
             frame.push_str(&format!(
-                " {0:.1}\n{1: <width$.1}{2:.1}\n",
+                " {0:.1}\n{1: <width$}{2:.1}\n",
                 self.ymin,
-                self.xmin,
+                " ".repeat(self.x as usize / 2) + &self.xmin.to_string(),
                 self.xmax,
-                width = (self.width as usize) / 2 - 3
+                width = ((self.width + self.x) as usize) / 2 - 3,
             ));
         }
         frame
@@ -302,9 +306,9 @@ impl<'a> Chart<'a> {
                         let (x2, y2) = pair[1];
                         if let Some(color) = color {
                             let color = rgb_to_pixelcolor(color);
-                            self.canvas.line_colored(x1, y1, x2, y2, color);
+                            self.canvas.line_colored(self.x + x1, y1, self.x + x2, y2, color);
                         } else {
-                            self.canvas.line(x1, y1, x2, y2);
+                            self.canvas.line(self.x + x1, y1, self.x + x2, y2);
                         }
                     }
                 }
@@ -320,11 +324,11 @@ impl<'a> Chart<'a> {
 
                         if let Some(color) = color {
                             let color = rgb_to_pixelcolor(color);
-                            self.canvas.line_colored(x1, y2, x2, y2, color);
-                            self.canvas.line_colored(x1, y1, x1, y2, color);
+                            self.canvas.line_colored(self.x + x1, y2, self.x + x2, y2, color);
+                            self.canvas.line_colored(self.x + x1, y1, self.x + x1, y2, color);
                         } else {
-                            self.canvas.line(x1, y2, x2, y2);
-                            self.canvas.line(x1, y1, x1, y2);
+                            self.canvas.line(self.x + x1, y2, self.x + x2, y2);
+                            self.canvas.line(self.x + x1, y1, self.x + x1, y2);
                         }
                     }
                 }
@@ -335,15 +339,15 @@ impl<'a> Chart<'a> {
 
                         if let Some(color) = color {
                             let color = rgb_to_pixelcolor(color);
-                            self.canvas.line_colored(x1, y2, x2, y2, color);
-                            self.canvas.line_colored(x1, y1, x1, y2, color);
-                            self.canvas.line_colored(x1, self.height, x1, y1, color);
-                            self.canvas.line_colored(x2, self.height, x2, y2, color);
+                            self.canvas.line_colored(self.x + x1, y2, self.x + x2, y2, color);
+                            self.canvas.line_colored(self.x + x1, y1, self.x + x1, y2, color);
+                            self.canvas.line_colored(self.x + x1, self.height, self.x + x1, y1, color);
+                            self.canvas.line_colored(self.x + x2, self.height, self.x + x2, y2, color);
                         } else {
-                            self.canvas.line(x1, y2, x2, y2);
-                            self.canvas.line(x1, y1, x1, y2);
-                            self.canvas.line(x1, self.height, x1, y1);
-                            self.canvas.line(x2, self.height, x2, y2);
+                            self.canvas.line(self.x + x1, y2, self.x + x2, y2);
+                            self.canvas.line(self.x + x1, y1, self.x + x1, y2);
+                            self.canvas.line(self.x + x1, self.height, self.x + x1, y1);
+                            self.canvas.line(self.x + x2, self.height, self.x + x2, y2);
                         }
                     }
                 }
